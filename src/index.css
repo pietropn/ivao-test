@@ -1,3 +1,127 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+:root {
+  --ivao-primary: #1e3a8a;
+  --ivao-secondary: #3b82f6;
+  --ivao-accent: #f59e0b;
+  --ivao-success: #059669;
+  --ivao-danger: #dc2626;
+  --ivao-light: #f8fafc;
+  --ivao-dark: #1e293b;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--ivao-light);
+}
+
+.navbar-brand {
+  font-weight: bold;
+  color: white !important;
+}
+
+.navbar {
+  background: linear-gradient(135deg, var(--ivao-primary) 0%, var(--ivao-secondary) 100%) !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card {
+  border: none;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  border-radius: 10px;
+}
+
+.btn-primary {
+  background-color: var(--ivao-primary);
+  border-color: var(--ivao-primary);
+}
+
+.btn-primary:hover {
+  background-color: var(--ivao-secondary);
+  border-color: var(--ivao-secondary);
+}
+
+.btn-warning {
+  background-color: var(--ivao-accent);
+  border-color: var(--ivao-accent);
+}
+
+.btn-success {
+  background-color: var(--ivao-success);
+  border-color: var(--ivao-success);
+}
+
+.btn-danger {
+  background-color: var(--ivao-danger);
+  border-color: var(--ivao-danger);
+}
+
+.table th {
+  background-color: var(--ivao-primary);
+  color: white;
+  border: none;
+}
+
+.table tbody tr:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.form-control:focus {
+  border-color: var(--ivao-secondary);
+  box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+}
+
+.alert-info {
+  background-color: rgba(59, 130, 246, 0.1);
+  border-color: var(--ivao-secondary);
+  color: var(--ivao-primary);
+}
+
+.position-badge {
+  background-color: var(--ivao-accent);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.vid-badge {
+  background-color: var(--ivao-secondary);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 5px;
+  font-size: 0.9rem;
+}
+
+.footer {
+  background-color: var(--ivao-dark);
+  color: white;
+  padding: 2rem 0;
+  margin-top: 3rem;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255,255,255,.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.react-datepicker-wrapper {
+  width: 100%;
+}
+
+.react-datepicker__input-container input {
+  width: 100%;
+}

@@ -1,212 +1,148 @@
-import React, { useState, useEffect } from 'react';
-import Header from './components/Header';
-import UserIdentification from './components/UserIdentification';
-import BookingTable from './components/BookingTable';
-import BookingForm from './components/BookingForm';
-import { api } from './services/api';
+import React, { useState, useEffect } from 'react'
+import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom'
+import BookingList from './components/BookingList'
+import BookingForm from './components/BookingForm'
+import DateBookings from './components/DateBookings'
+import UserBookings from './components/UserBookings'
+import VidInput from './components/VidInput'
+import { BookingProvider } from './context/BookingContext'
+import './App.css'
 
-const App = () => {
-  // State management
-  const [userVid, setUserVid] = useState('');
-  const [bookings, setBookings] = useState([]);
-  const [filteredBookings, setFilteredBookings] = useState([]);
-  const [selectedDate, setSelectedDate] = useState('');
-  const [showBookingForm, setShowBookingForm] = useState(false);
-  const [editingBooking, setEditingBooking] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('all');
+function Navigation({ currentVid, setCurrentVid }) {
+  const location = useLocation()
+  
+  return (
+    <nav className="navbar navbar-expand-lg navbar-dark">
+      <div className="container">
+        <Link className="navbar-brand" to="/">
+          <i className="fas fa-tower-broadcast me-2"></i>
+          IVAO ATC Booking System
+        </Link>
+        
+        <button 
+          className="navbar-toggler" 
+          type="button" 
+          data-bs-toggle="collapse" 
+          data-bs-target="#navbarNav"
+        >
+          <span className="navbar-toggler-icon"></span>
+        </button>
+        
+        <div className="collapse navbar-collapse" id="navbarNav">
+          <ul className="navbar-nav me-auto">
+            <li className="nav-item">
+              <Link 
+                className={`nav-link ${location.pathname === '/' ? 'active' : ''}`} 
+                to="/"
+              >
+                <i className="fas fa-list me-1"></i>
+                All Bookings
+              </Link>
+            </li>
+            <li className="nav-item">
+              <Link 
+                className={`nav-link ${location.pathname === '/date-search' ? 'active' : ''}`} 
+                to="/date-search"
+              >
+                <i className="fas fa-calendar me-1"></i>
+                Search by Date
+              </Link>
+            </li>
+            <li className="nav-item">
+              <Link 
+                className={`nav-link ${location.pathname === '/book' ? 'active' : ''}`} 
+                to="/book"
+              >
+                <i className="fas fa-plus me-1"></i>
+                New Booking
+              </Link>
+            </li>
+            {currentVid && (
+              <li className="nav-item">
+                <Link 
+                  className={`nav-link ${location.pathname === '/my-bookings' ? 'active' : ''}`} 
+                  to="/my-bookings"
+                >
+                  <i className="fas fa-user me-1"></i>
+                  My Bookings
+                </Link>
+              </li>
+            )}
+          </ul>
+          
+          <VidInput currentVid={currentVid} setCurrentVid={setCurrentVid} />
+        </div>
+      </div>
+    </nav>
+  )
+}
 
-  // Load bookings on component mount
+function Footer() {
+  return (
+    <footer className="footer mt-auto">
+      <div className="container">
+        <div className="row">
+          <div className="col-md-6">
+            <h5><i className="fas fa-tower-broadcast me-2"></i>IVAO ATC Booking</h5>
+            <p className="text-muted">
+              Sistema de agendamento de posições ATC para a rede IVAO.
+            </p>
+          </div>
+          <div className="col-md-6 text-md-end">
+            <p className="text-muted mb-0">
+              Desenvolvido para o teste técnico da IVAO Web Team
+            </p>
+            <small className="text-muted">
+              Frontend Entry Exercise - Pietro
+            </small>
+          </div>
+        </div>
+      </div>
+    </footer>
+  )
+}
+
+function App() {
+  const [currentVid, setCurrentVid] = useState(() => {
+    return localStorage.getItem('ivao_vid') || ''
+  })
+
   useEffect(() => {
-    loadBookings();
-  }, []);
-
-  // Filter bookings when dependencies change
-  useEffect(() => {
-    filterBookings();
-  }, [bookings, activeTab, selectedDate, userVid]);
-
-  /**
-   * Load all bookings from API
-   */
-  const loadBookings = async () => {
-    setLoading(true);
-    try {
-      const data = await api.getAllBookings();
-      setBookings(data);
-    } catch (error) {
-      console.error('Error loading bookings:', error);
-    } finally {
-      setLoading(false);
+    if (currentVid) {
+      localStorage.setItem('ivao_vid', currentVid)
+    } else {
+      localStorage.removeItem('ivao_vid')
     }
-  };
-
-  /**
-   * Filter bookings based on active tab and selected criteria
-   */
-  const filterBookings = () => {
-    let filtered = [...bookings];
-    const today = new Date().toISOString().split('T')[0];
-
-    switch (activeTab) {
-      case 'all':
-        // Show all future bookings, sorted by position
-        filtered = filtered
-          .filter(booking => booking.date >= today)
-          .sort((a, b) => a.position.localeCompare(b.position));
-        break;
-      
-      case 'date':
-        // Show bookings for specific date
-        if (selectedDate) {
-          filtered = filtered.filter(booking => booking.date === selectedDate);
-        } else {
-          filtered = [];
-        }
-        break;
-      
-      case 'my':
-        // Show user's future bookings
-        if (userVid) {
-          filtered = filtered
-            .filter(booking => booking.vid === userVid && booking.date >= today)
-            .sort((a, b) => 
-              new Date(a.date + ' ' + a.timeFrom) - new Date(b.date + ' ' + b.timeFrom)
-            );
-        } else {
-          filtered = [];
-        }
-        break;
-      
-      default:
-        break;
-    }
-
-    setFilteredBookings(filtered);
-  };
-
-  /**
-   * Handle booking creation or update
-   */
-  const handleBookingSave = async (bookingData) => {
-    if (!userVid) {
-      throw new Error('Please enter your VID first');
-    }
-
-    setLoading(true);
-    try {
-      const dataWithVid = { ...bookingData, vid: userVid };
-      
-      if (editingBooking) {
-        await api.updateBooking(editingBooking.id, dataWithVid);
-      } else {
-        await api.createBooking(dataWithVid);
-      }
-      
-      await loadBookings();
-      handleCloseForm();
-    } catch (error) {
-      console.error('Error saving booking:', error);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /**
-   * Handle booking edit
-   */
-  const handleEdit = (booking) => {
-    if (booking.vid !== userVid) {
-      alert('You can only edit your own bookings');
-      return;
-    }
-    setEditingBooking(booking);
-    setShowBookingForm(true);
-  };
-
-  /**
-   * Handle booking deletion
-   */
-  const handleDelete = async (booking) => {
-    if (booking.vid !== userVid) {
-      alert('You can only delete your own bookings');
-      return;
-    }
-    
-    if (!window.confirm('Are you sure you want to delete this booking?')) {
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await api.deleteBooking(booking.id);
-      await loadBookings();
-    } catch (error) {
-      console.error('Error deleting booking:', error);
-      alert('Error deleting booking');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /**
-   * Close booking form and reset state
-   */
-  const handleCloseForm = () => {
-    setEditingBooking(null);
-    setShowBookingForm(false);
-  };
-
-  /**
-   * Open new booking form
-   */
-  const handleNewBooking = () => {
-    if (!userVid) {
-      alert('Please enter your VID first');
-      return;
-    }
-    setEditingBooking(null);
-    setShowBookingForm(true);
-  };
+  }, [currentVid])
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      
-      <div className="container mx-auto px-4 py-8">
-        {/* User identification section */}
-        <UserIdentification 
-          userVid={userVid}
-          onVidChange={setUserVid}
-          onNewBooking={handleNewBooking}
-        />
+    <BookingProvider>
+      <Router>
+        <div className="d-flex flex-column min-vh-100">
+          <Navigation currentVid={currentVid} setCurrentVid={setCurrentVid} />
+          
+          <main className="flex-grow-1">
+            <div className="container my-4">
+              <Routes>
+                <Route path="/" element={<BookingList />} />
+                <Route path="/date-search" element={<DateBookings />} />
+                <Route 
+                  path="/book" 
+                  element={<BookingForm currentVid={currentVid} />} 
+                />
+                <Route 
+                  path="/my-bookings" 
+                  element={<UserBookings currentVid={currentVid} />} 
+                />
+              </Routes>
+            </div>
+          </main>
+          
+          <Footer />
+        </div>
+      </Router>
+    </BookingProvider>
+  )
+}
 
-        {/* Booking table with tabs */}
-        <BookingTable
-          bookings={filteredBookings}
-          loading={loading}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          selectedDate={selectedDate}
-          onDateChange={setSelectedDate}
-          userVid={userVid}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
-
-        {/* Booking form modal */}
-        {showBookingForm && (
-          <BookingForm
-            booking={editingBooking}
-            onSave={handleBookingSave}
-            onClose={handleCloseForm}
-            loading={loading}
-          />
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default App;
+export default App
