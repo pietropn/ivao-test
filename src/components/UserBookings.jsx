@@ -3,8 +3,6 @@ import { Link } from 'react-router-dom'
 import { bookingAPI } from '../services/api'
 import { useBooking } from '../context/BookingContext'
 import { formatDateTime, getBookingStatus, isBookingFuture } from '../utils'
-import LoadingSpinner from './LoadingSpinner'
-import ErrorMessage from './ErrorMessage'
 
 const UserBookings = ({ currentVid }) => {
   const { dispatch } = useBooking()
@@ -60,6 +58,124 @@ const UserBookings = ({ currentVid }) => {
 
   const handleRefresh = () => {
     fetchUserBookings()
+  }
+
+  const renderBookingTable = (bookings, title, emptyMessage) => {
+    if (bookings.length === 0) return null
+
+    return (
+      <div className="mb-4">
+        <h5 className="text-primary mb-3">
+          <i className="fas fa-clock me-2"></i>
+          {title} ({bookings.length})
+        </h5>
+        <div className="table-responsive">
+          <table className="table table-hover">
+            <thead className="table-light">
+              <tr>
+                <th>Position</th>
+                <th>Date</th>
+                <th>From</th>
+                <th>To</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {bookings.map(booking => (
+                <tr key={booking.id}>
+                  <td>
+                    <span className="fw-bold text-primary">
+                      {booking.position}
+                    </span>
+                  </td>
+                  <td>
+                    {formatDateTime(booking.fromDateTime, 'date')}
+                  </td>
+                  <td>
+                    {formatDateTime(booking.fromDateTime, 'time')}
+                  </td>
+                  <td>
+                    {formatDateTime(booking.toDateTime, 'time')}
+                  </td>
+                  <td>
+                    <span className={`badge ${getBookingStatusClass(booking)}`}>
+                      {getBookingStatus(booking)}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="btn-group btn-group-sm">
+                      {isBookingFuture(booking) && (
+                        <>
+                          <Link
+                            to={`/edit/${booking.id}`}
+                            className="btn btn-outline-primary"
+                            title="Edit booking"
+                          >
+                            <i className="fas fa-edit"></i>
+                          </Link>
+                          <button
+                            className="btn btn-outline-danger"
+                            onClick={() => handleDelete(booking.id)}
+                            disabled={deletingId === booking.id}
+                            title="Delete booking"
+                          >
+                            {deletingId === booking.id ? (
+                              <i className="fas fa-spinner fa-spin"></i>
+                            ) : (
+                              <i className="fas fa-trash"></i>
+                            )}
+                          </button>
+                        </>
+                      )}
+                      <button
+                        className="btn btn-outline-info"
+                        onClick={() => showBookingDetails(booking)}
+                        title="View details"
+                      >
+                        <i className="fas fa-eye"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
+  }
+
+  const getBookingStatusClass = (booking) => {
+    const status = getBookingStatus(booking)
+    switch (status) {
+      case 'Active':
+        return 'bg-success'
+      case 'Upcoming':
+        return 'bg-primary'
+      case 'Past':
+        return 'bg-secondary'
+      case 'Expired':
+        return 'bg-warning text-dark'
+      default:
+        return 'bg-light text-dark'
+    }
+  }
+
+  const showBookingDetails = (booking) => {
+    const details = `
+Booking Details:
+━━━━━━━━━━━━━━━━━━━━
+Position: ${booking.position}
+Date: ${formatDateTime(booking.fromDateTime, 'date')}
+Time: ${formatDateTime(booking.fromDateTime, 'time')} - ${formatDateTime(booking.toDateTime, 'time')}
+Status: ${getBookingStatus(booking)}
+VID: ${booking.vid}
+Created: ${formatDateTime(booking.createdAt)}
+${booking.notes ? `Notes: ${booking.notes}` : ''}
+━━━━━━━━━━━━━━━━━━━━
+    `
+    alert(details)
   }
 
   if (!currentVid) {
@@ -138,8 +254,97 @@ const UserBookings = ({ currentVid }) => {
               ) : (
                 <>
                   {/* Future Bookings */}
-                  {futureBookings.length > 0 && (
-                    <div className="mb-4">
-                      <h5 className="text-primary mb-3">
-                        <i className="fas fa-clock me-2"></i>
-                        Upcoming Bookings ({futureBookings.length})
+                  {renderBookingTable(
+                    futureBookings, 
+                    'Upcoming Bookings', 
+                    'No upcoming bookings'
+                  )}
+
+                  {/* Past Bookings */}
+                  {pastBookings.length > 0 && (
+                    <div className="mt-4">
+                      {renderBookingTable(
+                        pastBookings.slice(0, 10), // Show only last 10 past bookings
+                        'Recent Past Bookings',
+                        'No past bookings'
+                      )}
+                      {pastBookings.length > 10 && (
+                        <div className="text-center mt-3">
+                          <small className="text-muted">
+                            Showing last 10 past bookings. Total past bookings: {pastBookings.length}
+                          </small>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Statistics */}
+                  <div className="row mt-4">
+                    <div className="col-md-4">
+                      <div className="card bg-primary text-white">
+                        <div className="card-body text-center">
+                          <h3 className="mb-0">{futureBookings.length}</h3>
+                          <small>Upcoming Bookings</small>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="card bg-secondary text-white">
+                        <div className="card-body text-center">
+                          <h3 className="mb-0">{pastBookings.length}</h3>
+                          <small>Past Bookings</small>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="card bg-info text-white">
+                        <div className="card-body text-center">
+                          <h3 className="mb-0">{userBookings.length}</h3>
+                          <small>Total Bookings</small>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Help Section */}
+          <div className="card mt-4">
+            <div className="card-header">
+              <h5 className="mb-0">
+                <i className="fas fa-question-circle me-2"></i>
+                Need Help?
+              </h5>
+            </div>
+            <div className="card-body">
+              <div className="row">
+                <div className="col-md-6">
+                  <h6>Managing Your Bookings</h6>
+                  <ul className="list-unstyled">
+                    <li><i className="fas fa-edit text-primary me-2"></i>Edit upcoming bookings</li>
+                    <li><i className="fas fa-trash text-danger me-2"></i>Delete unwanted bookings</li>
+                    <li><i className="fas fa-eye text-info me-2"></i>View detailed information</li>
+                    <li><i className="fas fa-sync-alt text-secondary me-2"></i>Refresh to see latest data</li>
+                  </ul>
+                </div>
+                <div className="col-md-6">
+                  <h6>Booking Status</h6>
+                  <ul className="list-unstyled">
+                    <li><span className="badge bg-primary me-2">Upcoming</span>Future bookings</li>
+                    <li><span className="badge bg-success me-2">Active</span>Currently active</li>
+                    <li><span className="badge bg-secondary me-2">Past</span>Completed bookings</li>
+                    <li><span className="badge bg-warning text-dark me-2">Expired</span>Missed bookings</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default UserBookings
