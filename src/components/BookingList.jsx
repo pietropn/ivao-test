@@ -2,8 +2,6 @@ import React, { useEffect, useState } from 'react'
 import { bookingAPI } from '../services/api'
 import { useBooking } from '../context/BookingContext'
 import { formatDateTime, getBookingStatus } from '../utils'
-import LoadingSpinner from './LoadingSpinner'
-import ErrorMessage from './ErrorMessage'
 
 const BookingList = () => {
   const { bookings, loading, error, dispatch } = useBooking()
