@@ -1,8 +1,6 @@
 import React, { useState } from 'react'
 import { bookingAPI } from '../services/api'
 import { formatDateTime, formatDateForInput, getBookingStatus } from '../utils'
-import LoadingSpinner from './LoadingSpinner'
-import ErrorMessage from './ErrorMessage'
 
 const DateBookings = () => {
   const [selectedDate, setSelectedDate] = useState(formatDateForInput(new Date()))
